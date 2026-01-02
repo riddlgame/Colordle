@@ -4,8 +4,15 @@ import { RGB } from "../types";
 
 export const suggestColors = async (count: number = 5): Promise<Array<{ color: RGB, name: string }>> => {
   try {
-    // Initializing inside the function prevents crashes if process is undefined at module load time
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Defensive check for API key
+    const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : null;
+    
+    if (!apiKey) {
+      console.warn("Gemini API Key is not defined in process.env");
+      return [];
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Suggest ${count} vibrant and pleasing colors with their RGB values.`,
@@ -35,7 +42,7 @@ export const suggestColors = async (count: number = 5): Promise<Array<{ color: R
       color: { r: item.r, g: item.g, b: item.b }
     }));
   } catch (error) {
-    console.error("Error fetching suggestions:", error);
+    console.error("Error fetching suggestions from Gemini:", error);
     return [];
   }
 };
