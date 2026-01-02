@@ -8,6 +8,7 @@ import GameBoard from './components/GameBoard';
 import RGBSliders from './components/RGBSliders';
 import WinModal from './components/WinModal';
 import LossModal from './components/LossModal';
+import ArchiveModal from './components/ArchiveModal';
 import Toast from './components/Toast';
 import AdminPanel from './components/Admin/AdminPanel';
 import AdminLogin from './components/Admin/AdminLogin';
@@ -19,35 +20,36 @@ const App: React.FC = () => {
   const [view, setView] = useState<'game' | 'admin-login' | 'admin-panel'>('game');
   
   // Game State
-  const [currentDate] = useState(getFormattedDate());
+  const [puzzleDate, setPuzzleDate] = useState(getFormattedDate());
   const [isDaily, setIsDaily] = useState(true);
   const [targetColor, setTargetColor] = useState<RGB | null>(null);
   const [guesses, setGuesses] = useState<GuessResult[]>([]);
   const [gameState, setGameState] = useState<GameState>(GameState.Playing);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [currentRGB, setCurrentRGB] = useState<RGB>({ r: 128, g: 128, b: 128 });
+  
+  // Modal states
   const [showWinModal, setShowWinModal] = useState(false);
   const [showLossModal, setShowLossModal] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'error' | 'success' } | null>(null);
 
   // Initialize with Daily Puzzle
   useEffect(() => {
-    startDailyPuzzle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadPuzzle(puzzleDate);
+  }, [puzzleDate]);
 
-  const startDailyPuzzle = () => {
+  const loadPuzzle = (date: string) => {
     let allColors = storage.getDailyColors();
     if (allColors.length === 0) {
       allColors = INITIAL_DAILY_COLORS;
       storage.saveDailyColors(allColors);
     }
     
-    const today = getFormattedDate();
-    let found = allColors.find(c => c.date === today);
+    let found = allColors.find(c => c.date === date);
     
     if (!found) {
-      found = { date: today, color: generateRandomColor() };
+      found = { date, color: generateRandomColor() };
       allColors = [found, ...allColors];
       storage.saveDailyColors(allColors);
     }
@@ -55,15 +57,20 @@ const App: React.FC = () => {
     setTargetColor(found.color);
     setIsDaily(true);
     
-    const savedGame = storage.getGameState(today);
+    const savedGame = storage.getGameState(date);
     if (savedGame) {
       setGuesses(savedGame.guesses);
       setHintsUsed(savedGame.hintsUsed);
       setGameState(savedGame.state);
       if (savedGame.state === GameState.Won) {
         setShowWinModal(true);
+        setShowLossModal(false);
       } else if (savedGame.guesses.length >= MAX_GUESSES) {
         setShowLossModal(true);
+        setShowWinModal(false);
+      } else {
+        setShowWinModal(false);
+        setShowLossModal(false);
       }
     } else {
       resetGameState();
@@ -117,7 +124,7 @@ const App: React.FC = () => {
       setShowWinModal(true);
       if (isDaily) {
         storage.saveGameState({
-          date: currentDate,
+          date: puzzleDate,
           guesses: updatedGuesses,
           hintsUsed,
           state: GameState.Won
@@ -126,7 +133,7 @@ const App: React.FC = () => {
     } else {
       if (isDaily) {
         storage.saveGameState({
-          date: currentDate,
+          date: puzzleDate,
           guesses: updatedGuesses,
           hintsUsed,
           state: updatedGuesses.length >= MAX_GUESSES ? GameState.Playing : GameState.Playing 
@@ -141,9 +148,6 @@ const App: React.FC = () => {
   const handleGiveUp = () => {
     if (gameState === GameState.Won) return;
     setShowLossModal(true);
-    // We don't necessarily update storage for giving up to allow them to refresh and try again 
-    // unless you want to "burn" the daily puzzle on give up.
-    // For now, we just show the results.
   };
 
   const handleHint = () => {
@@ -174,10 +178,15 @@ const App: React.FC = () => {
       return `${r}${g_eval}${b}`;
     }).join('\n');
     
-    const context = isDaily ? `Daily ${currentDate}` : `Practice Game`;
+    const context = isDaily ? `Daily ${puzzleDate}` : `Practice Game`;
     const text = `Colordle ${context}\n${guesses.length}/${MAX_GUESSES}\n\n${emojiGrid}\n\nPlay at: colordle.web.app`;
     navigator.clipboard.writeText(text);
     setToast({ message: "Copied to clipboard!", type: 'success' });
+  };
+
+  const onSelectArchiveDate = (date: string) => {
+    setPuzzleDate(date);
+    setShowArchive(false);
   };
 
   if (view === 'admin-login') {
@@ -191,11 +200,12 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col pb-12">
       <Header 
-        date={currentDate} 
+        date={puzzleDate} 
         isDaily={isDaily}
         hintsRemaining={MAX_HINTS - hintsUsed} 
         onShowHints={handleHint}
         onShowAdmin={() => setView('admin-login')}
+        onShowArchive={() => setShowArchive(true)}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -211,12 +221,11 @@ const App: React.FC = () => {
             }}
           ></div>
           
-          {/* Game Description Blurb */}
           {guesses.length === 0 && gameState === GameState.Playing && (
             <div className="mt-6 px-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-700">
               <p className="text-gray-500 text-sm leading-relaxed font-medium">
                 Can you pinpoint the exact <span className="text-indigo-600 font-bold italic">RGB values</span> of the color above? 
-                Adjust the sliders to mix your guess. You have 6 tries to match the target within ±5 for each channel.
+                Adjust the sliders to mix your guess.
               </p>
             </div>
           )}
@@ -269,6 +278,14 @@ const App: React.FC = () => {
           targetColor={targetColor}
           onPlayAgain={startRandomGame}
           onClose={() => setShowLossModal(false)}
+        />
+      )}
+
+      {showArchive && (
+        <ArchiveModal 
+          availableColors={storage.getDailyColors().length > 0 ? storage.getDailyColors() : INITIAL_DAILY_COLORS}
+          onSelectDate={onSelectArchiveDate}
+          onClose={() => setShowArchive(false)}
         />
       )}
     </div>

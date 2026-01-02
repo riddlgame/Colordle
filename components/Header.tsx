@@ -7,9 +7,10 @@ interface HeaderProps {
   hintsRemaining: number;
   onShowHints: () => void;
   onShowAdmin: () => void;
+  onShowArchive: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ date, isDaily, hintsRemaining, onShowHints, onShowAdmin }) => {
+const Header: React.FC<HeaderProps> = ({ date, isDaily, hintsRemaining, onShowHints, onShowAdmin, onShowArchive }) => {
   return (
     <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-40 shadow-sm">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -41,10 +42,17 @@ const Header: React.FC<HeaderProps> = ({ date, isDaily, hintsRemaining, onShowHi
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <button 
+            onClick={onShowArchive}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+            title="Archive"
+          >
+            <i className="fas fa-calendar-alt text-lg"></i>
+          </button>
           <button 
             onClick={onShowHints}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95"
           >
             <i className="fas fa-lightbulb text-sm"></i>
             <span className="font-black text-sm">{hintsRemaining}</span>

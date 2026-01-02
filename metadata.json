@@ -1,5 +1,5 @@
 {
   "name": "Colordle - The RGB Guessing Game",
-  "description": "A daily color guessing challenge where you pinpoint a mystery RGB value. Features daily puzzles, an archive of past games, hints, and an AI-powered admin management panel.",
+  "description": "A daily color guessing challenge where you pinpoint a mystery RGB value. Features daily puzzles, an archive of past games, hints, and a management panel.",
   "requestFramePermissions": []
 }

@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DailyColor, RGB } from '../../types';
-import { storage, getFormattedDate } from '../../utils/helpers';
-import { suggestColors } from '../../services/geminiService';
+import { storage, getFormattedDate, generateRandomColor } from '../../utils/helpers';
 import Toast from '../Toast';
 
 interface AdminPanelProps {
@@ -15,7 +14,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   const [newColor, setNewColor] = useState<DailyColor>({ date: getFormattedDate(), color: { r: 128, g: 128, b: 128 } });
   const [isDirty, setIsDirty] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'error' | 'success' } | null>(null);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   useEffect(() => {
     const saved = storage.getDailyColors();
@@ -25,7 +23,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
 
   const handleUpdate = (index: number, field: keyof RGB, value: number) => {
     const updated = [...colors];
-    updated[index].color[field] = value;
+    updated[index].color[field] = Math.min(255, Math.max(0, value));
     setColors(updated);
     setIsDirty(true);
   };
@@ -44,17 +42,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     setIsDirty(true);
   };
 
-  const handleSuggest = async () => {
-    setIsSuggesting(true);
-    const suggestions = await suggestColors(3);
-    if (suggestions.length > 0) {
-      const first = suggestions[0];
-      setNewColor({ ...newColor, color: first.color });
-      setToast({ message: `AI Suggestion: ${first.name}`, type: 'success' });
-    } else {
-      setToast({ message: "API Key required for suggestions", type: 'error' });
-    }
-    setIsSuggesting(false);
+  const handleRandomize = () => {
+    setNewColor({ ...newColor, color: generateRandomColor() });
+    setToast({ message: "Generated a random color!", type: 'success' });
   };
 
   const saveAll = () => {
@@ -104,8 +94,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
               </div>
             </div>
             <div className="flex space-x-2">
-              <button onClick={handleSuggest} disabled={isSuggesting} className="flex-1 p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition-all flex items-center justify-center">
-                {isSuggesting ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-magic"></i>}
+              <button onClick={handleRandomize} className="flex-1 p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center" title="Randomize Color">
+                <i className="fas fa-random"></i>
               </button>
               <button onClick={handleAdd} className="flex-[2] p-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">Add</button>
             </div>
@@ -116,7 +106,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-700">Existing Puzzles ({colors.length})</h2>
           {colors.map((item, idx) => (
-            <div key={item.date} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 animate-in fade-in">
+            <div key={`${item.date}-${idx}`} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 animate-in fade-in">
               <div 
                 className="w-16 h-16 rounded-xl border-2 border-white shadow-sm flex-shrink-0"
                 style={{ backgroundColor: `rgb(${item.color.r}, ${item.color.g}, ${item.color.b})` }}
