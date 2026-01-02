@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { RGB, DailyColor, GuessResult, GameState, GameStatus } from './types';
 import { INITIAL_DAILY_COLORS, MAX_HINTS, HINT_RANGE } from './constants';
@@ -12,8 +11,6 @@ import ArchiveModal from './components/ArchiveModal';
 import Toast from './components/Toast';
 import AdminPanel from './components/Admin/AdminPanel';
 import AdminLogin from './components/Admin/AdminLogin';
-
-const MAX_GUESSES = 6;
 
 const App: React.FC = () => {
   // Navigation State
@@ -65,9 +62,6 @@ const App: React.FC = () => {
       if (savedGame.state === GameState.Won) {
         setShowWinModal(true);
         setShowLossModal(false);
-      } else if (savedGame.guesses.length >= MAX_GUESSES) {
-        setShowLossModal(true);
-        setShowWinModal(false);
       } else {
         setShowWinModal(false);
         setShowLossModal(false);
@@ -106,11 +100,6 @@ const App: React.FC = () => {
       return;
     }
 
-    if (guesses.length >= MAX_GUESSES) {
-      setToast({ message: "Out of guesses!", type: 'error' });
-      return;
-    }
-
     const evaluation = evaluateGuess(currentRGB, targetColor);
     const newGuess: GuessResult = { guess: { ...currentRGB }, evaluation };
     const updatedGuesses = [...guesses, newGuess];
@@ -130,18 +119,13 @@ const App: React.FC = () => {
           state: GameState.Won
         });
       }
-    } else {
-      if (isDaily) {
-        storage.saveGameState({
-          date: puzzleDate,
-          guesses: updatedGuesses,
-          hintsUsed,
-          state: updatedGuesses.length >= MAX_GUESSES ? GameState.Playing : GameState.Playing 
-        });
-      }
-      if (updatedGuesses.length >= MAX_GUESSES) {
-        setShowLossModal(true);
-      }
+    } else if (isDaily) {
+      storage.saveGameState({
+        date: puzzleDate,
+        guesses: updatedGuesses,
+        hintsUsed,
+        state: GameState.Playing 
+      });
     }
   };
 
@@ -179,7 +163,7 @@ const App: React.FC = () => {
     }).join('\n');
     
     const context = isDaily ? `Daily ${puzzleDate}` : `Practice Game`;
-    const text = `Colordle ${context}\n${guesses.length}/${MAX_GUESSES}\n\n${emojiGrid}\n\nPlay at: colordle.web.app`;
+    const text = `Colordle ${context}\n${guesses.length} Guesses\n\n${emojiGrid}\n\nPlay at: colordle.web.app`;
     navigator.clipboard.writeText(text);
     setToast({ message: "Copied to clipboard!", type: 'success' });
   };
@@ -230,7 +214,7 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {(gameState === GameState.Won || guesses.length >= MAX_GUESSES || showLossModal) && targetColor && (
+          {(gameState === GameState.Won || showLossModal) && targetColor && (
             <div className="mt-4 flex flex-col items-center animate-in slide-in-from-top-2">
               <div className="flex space-x-2">
                 <span className="text-xs font-mono font-bold text-red-400">R: {targetColor.r}</span>
@@ -246,17 +230,16 @@ const App: React.FC = () => {
           onChange={setCurrentRGB} 
           onGuess={handleGuess}
           onGiveUp={handleGiveUp}
-          disabled={gameState === GameState.Won || guesses.length >= MAX_GUESSES || showLossModal}
+          disabled={gameState === GameState.Won || showLossModal}
         />
 
         <div className="space-y-4 pt-4">
            <div className="flex items-center justify-between px-2">
              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Guess History</h3>
-             <span className="text-[10px] font-bold text-gray-300">{guesses.length} / {MAX_GUESSES}</span>
+             <span className="text-[10px] font-bold text-gray-300">{guesses.length} Attempt{guesses.length !== 1 ? 's' : ''}</span>
            </div>
            <GameBoard 
             guesses={guesses} 
-            maxGuesses={MAX_GUESSES} 
             currentGuess={currentRGB} 
             isWon={gameState === GameState.Won} 
           />

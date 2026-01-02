@@ -1,4 +1,3 @@
-
 import { DailyColor } from './types';
 
 export const ADMIN_PASSWORD = 'riddlword@01123581321';
@@ -21,7 +20,7 @@ export const INITIAL_DAILY_COLORS: DailyColor[] = [
   { date: '24/05/2024', color: { r: 255, g: 215, b: 0 } },
 ];
 
-export const TOLERANCE = 5;
+export const TOLERANCE = 10;
 export const HINT_RANGE = 20;
 export const MAX_HINTS = 2;
 
