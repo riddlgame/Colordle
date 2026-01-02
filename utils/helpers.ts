@@ -30,15 +30,24 @@ export const evaluateGuess = (guess: RGB, target: RGB): GuessResult['evaluation'
 
 export const storage = {
   getDailyColors: (): DailyColor[] => {
-    const data = localStorage.getItem('colordle_daily_colors');
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = localStorage.getItem('colordle_daily_colors');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error("Failed to parse daily colors from storage", e);
+      return [];
+    }
   },
   saveDailyColors: (colors: DailyColor[]) => {
     localStorage.setItem('colordle_daily_colors', JSON.stringify(colors));
   },
   getGameState: (date: string): GameStatus | null => {
-    const data = localStorage.getItem(`colordle_game_${date}`);
-    return data ? JSON.parse(data) : null;
+    try {
+      const data = localStorage.getItem(`colordle_game_${date}`);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
   },
   saveGameState: (status: GameStatus) => {
     localStorage.setItem(`colordle_game_${status.date}`, JSON.stringify(status));
@@ -48,10 +57,12 @@ export const storage = {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith('colordle_game_')) {
-        const game = JSON.parse(localStorage.getItem(key) || '{}');
-        if (game.state === GameState.Won) {
-          wonDates.push(game.date);
-        }
+        try {
+          const game = JSON.parse(localStorage.getItem(key) || '{}');
+          if (game.state === GameState.Won) {
+            wonDates.push(game.date);
+          }
+        } catch (e) {}
       }
     }
     return wonDates;

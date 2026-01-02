@@ -1,12 +1,19 @@
 
 import { DailyColor } from './types';
-import { getFormattedDate } from './utils/helpers';
 
 export const ADMIN_PASSWORD = 'riddlword@01123581321';
 
-// Provide some static past dates and ensure "today" is always covered
+// Internal helper to avoid circular dependency with utils/helpers.ts
+const getTodayString = (): string => {
+  const date = new Date();
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
 export const INITIAL_DAILY_COLORS: DailyColor[] = [
-  { date: getFormattedDate(), color: { r: 79, g: 70, b: 229 } }, // Indigo-600 as default for today
+  { date: getTodayString(), color: { r: 79, g: 70, b: 229 } },
   { date: '25/05/2024', color: { r: 100, g: 150, b: 200 } },
   { date: '26/05/2024', color: { r: 255, g: 99, b: 71 } },
   { date: '27/05/2024', color: { r: 60, g: 179, b: 113 } },
